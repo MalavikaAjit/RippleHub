@@ -2,4 +2,3 @@ node_modules/
 auth.controller.js
 user.model.js
 auth.route.js
-generateTokenAndSetCookie.js
