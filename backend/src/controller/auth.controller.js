@@ -1,6 +1,13 @@
 import { User } from "../models/user.model.js";
 import bcryptjs from "bcryptjs";
+import crypto from "crypto";
 import { generateTokenAndSetCookie } from "../utils/generateTokenAndSetCookie.js";
+import {
+  sendPasswordResetEmail,
+  sendResetSuccessEmail,
+  sendVerificationEmail,
+  sendWelcomeEmail,
+} from "../services/mail-notification/emails.js";
 
 export const signup = async (req, res) => {
   const { email, password, firstName, lastName } = req.body;
@@ -34,6 +41,9 @@ export const signup = async (req, res) => {
     //jwt to generate the token and cookie
     generateTokenAndSetCookie(res, user._id);
 
+    // email verification
+    await sendVerificationEmail(user.email, verificationToken);
+
     res.status(201).json({
       success: true,
       message: "User created successfully",
@@ -47,10 +57,36 @@ export const signup = async (req, res) => {
   }
 };
 
-export const login = async (req, res) => {
-  res.send("Log In Route");
-};
+export const verifyEmail = async (req, res) => {
+  const { code } = req.body;
+  try {
+    const user = await User.findOne({
+      verificationToken: code,
+      verificationTokenExpiresAt: { $gt: Date.now() },
+    });
 
-export const logout = async (req, res) => {
-  res.send("Log Out Route");
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or expired verification code",
+      });
+    }
+    user.isVerified = true;
+    user.verificationToken = undefined;
+    user.verificationTokenExpiresAt = undefined;
+    await user.save();
+
+    await sendWelcomeEmail(user.email, user.firstName);
+
+    res.status(200).json({
+      success: true,
+      message: "Email Verified Successfully",
+      user: {
+        ...User._doc,
+        password: undefined,
+      },
+    });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
 };
