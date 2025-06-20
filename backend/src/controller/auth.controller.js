@@ -83,6 +83,12 @@ export const verifyEmail = async (req, res) => {
       message: "Email Verified Successfully",
       user: {
         ...User._doc,
+
+    res.status(200).json({
+      success: true,
+      message: "Email Verified Successfully",
+      user: {
+        ...User._doc,
         password: undefined,
       },
     });
@@ -214,6 +220,7 @@ export const resetPassword = async (req, res) => {
       },
     });
   } catch (error) {
+
     console.log("Error in resetPassword:", error);
     res.status(400).json({ success: false, message: error.message });
   }
