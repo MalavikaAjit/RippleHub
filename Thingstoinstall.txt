@@ -1,0 +1,17 @@
+Backend 
+
+Npm install
+Npm install express
+Npm install mongoose
+Npm install dotenv
+Npm install nodemailer
+Npm install jwtwebtoken
+npm install -g nodemon
+npm install react-icons react-toastify
+npm install bcryptjs
+npm install zustand
+
+Frontend
+
+Npm install
+Npm install tailwind
