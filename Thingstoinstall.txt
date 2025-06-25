@@ -10,6 +10,7 @@ npm install -g nodemon
 npm install react-icons react-toastify
 npm install bcryptjs
 npm install zustand
+npm install cookie-parser
 
 Frontend
 
