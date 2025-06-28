@@ -16,8 +16,6 @@ import LogInPage from "./pages/LogInPage";
 import EmailVerification from "./pages/EmailVerification";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
-
-
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, user } = useAuthStore();
   if (!isAuthenticated) return <Navigate to="/login" replace />;
@@ -59,7 +57,7 @@ function App() {
         <Route path="/settings" element={<SettingPage />} />
         <Route path="/upload" element={<UploadPage />} />
         <Route path="/find" element={<FindPage />} />
-        <Route path="/profile" element={<ProfilePage/>} />
+        <Route path="/profile" element={<ProfilePage />} />
       </Route>
 
       <Route

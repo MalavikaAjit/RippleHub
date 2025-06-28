@@ -27,7 +27,6 @@ const DashboardPage = () => {
   const postMenuRef = useRef(null);
   const privacy = "public";
 
-
    const navigate = useNavigate();
   return (
     <div
