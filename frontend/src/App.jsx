@@ -4,13 +4,18 @@ import { useAuthStore } from "./store/authStore";
 import Loader from "./components/Loader";
 import DashboardLayout from "./layouts/DashboardLayout";
 
-
+import DashboardPage from "./pages/DashboardPage";
+import NotificationPage from "./pages/DashboardPages/NotificationPage";
+import MessagePage from "./pages/DashboardPages/MessagePage";
+import SettingPage from "./pages/DashboardPages/SettingPage";
+import UploadPage from "./pages/DashboardPages/UploadPage";
+import FindPage from "./pages/DashboardPages/FindPage";
+import ProfilePage from "./pages/DashboardPages/ProfilePage";
 import SignUpPage from "./pages/SignUpPage";
 import LogInPage from "./pages/LogInPage";
 import EmailVerification from "./pages/EmailVerification";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
-
 
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, user } = useAuthStore();
@@ -47,7 +52,13 @@ function App() {
           </ProtectedRoute>
         }
       >
-        
+        <Route path="/" element={<DashboardPage />} />
+        <Route path="/notifications" element={<NotificationPage />} />
+        <Route path="/messages" element={<MessagePage />} />
+        <Route path="/settings" element={<SettingPage />} />
+        <Route path="/upload" element={<UploadPage />} />
+        <Route path="/find" element={<FindPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
       </Route>
 
       <Route

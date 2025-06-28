@@ -17,6 +17,7 @@ import { FaCircleCheck, FaCircleXmark, FaCircleUser } from "react-icons/fa6";
 import { useOutletContext, Navigate, useNavigate } from "react-router-dom";
 
 const DashboardPage = () => {
+
   const { user } = useAuthStore();
   const { isDark } = useThemeStore();
   const { isCollapsed } = useOutletContext();
