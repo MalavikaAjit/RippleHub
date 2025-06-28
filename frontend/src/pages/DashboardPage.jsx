@@ -1,26 +1,33 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useAuthStore } from "../store/authStore";
-import { useNavigate } from "react-router-dom";
+import { useThemeStore } from "../store/themeStore";
+import {
+  Heart,
+  MessageCircle,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+} from "lucide-react";
+import {
+  
+  FaGlobeAmericas,
+  FaLock,
+  FaUserFriends,
+} from "react-icons/fa";
+import { useOutletContext, Navigate, useNavigate } from "react-router-dom";
 
 const DashboardPage = () => {
-  const { user, logout } = useAuthStore();
-  const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const { isDark } = useThemeStore();
+  const { isCollapsed } = useOutletContext();
+  const [showProfile, setShowProfile] = useState(false);
+  const [showPostMenu, setShowPostMenu] = useState(false);
+  const profileRef = useRef(null);
+  const postMenuRef = useRef(null);
+  const privacy = "public";
 
-  const formatDate = (dateString) => {
-    if (!dateString) return "N/A";
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  };
 
-  const handleLogout = async () => {
-    logout();
-    navigate("/login");
-  };
-
+   const navigate = useNavigate();
   return (
     <div
       className={`${
