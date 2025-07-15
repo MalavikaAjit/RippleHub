@@ -1,12 +1,11 @@
 import express from 'express';
-import { postImageUpload } from '../middleware/multerConnection.js'; // Adjust path to your middleware
-import { createPost, getPost } from '../controller/post.controller.js'; // Adjust path to your controller
+import { postImageUpload } from '../middleware/multerConnection.js';
+import { createPost, getPost } from '../controller/post.controller.js';
+import { protectAuth } from '../middleware/protectAuth.js'; // ✅ updated correctly
 
 const router = express.Router();
 
-// Route for creating a post with image(s)
-
-router.get ('/posts',getPost);
-router.post('/posts', postImageUpload, createPost);
+router.get('/posts', protectAuth, getPost);
+router.post('/posts', protectAuth, postImageUpload, createPost);
 
 export default router;
