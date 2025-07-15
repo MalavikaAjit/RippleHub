@@ -4,7 +4,8 @@ import { useThemeStore } from "../../store/themeStore";
 import { useAuthStore } from "../../store/authStore";
 import usePostStore from "../../store/postStore";
 
-const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:2057/";
+// Ensure baseUrl has no trailing slash
+const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:2057";
 
 const ImageWithErrorBoundary = ({ src, alt, postId, index, handleImageError, ...props }) => {
   const [error, setError] = useState(false);
@@ -18,16 +19,15 @@ const ImageWithErrorBoundary = ({ src, alt, postId, index, handleImageError, ...
         </div>
       )}
       <img
-        src={error ? "https://via.placeholder.com/150?text=Image+Error" : src}
+        src={error ? "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150' viewBox='0 0 24 24' fill='none' stroke='%23ccc' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2' ry='2'%3E%3C/rect%3E%3Cline x1='3' y1='9' x2='21' y2='9'%3E%3C/line%3E%3Cline x1='9' y1='21' x2='9' y2='9'%3E%3C/line%3E%3C/svg%3E" : src}
         alt={alt}
         onError={() => {
           setError(true);
           setLoading(false);
-          handleImageError(postId, index);
+          handleImageError(postId, index, src); // Pass src to error handler
         }}
         onLoad={() => {
           setLoading(false);
-          console.log("Image loaded successfully:", src);
         }}
         className={`w-full h-48 object-cover ${loading && !error ? "opacity-0" : "opacity-100"}`}
         {...props}
@@ -44,58 +44,48 @@ const ProfilePage = () => {
   const [currentSlide, setCurrentSlide] = useState({});
   const [imageError, setImageError] = useState({});
 
+  // Fetch posts once on mount
   useEffect(() => {
-    if (posts.length === 0 && !isLoading) {
-      console.log("Auth state:", { user });
-      console.log("Post state before fetch:", { isLoading, error, posts });
-      console.log("Fetching posts...");
-      fetchPost().catch((err) => console.error("Failed to fetch posts:", err));
+    fetchPost().catch((err) => console.error("Failed to fetch posts:", err));
+  }, [fetchPost]);
+
+  // Log the posts to verify structure
+  useEffect(() => {
+    if (posts && posts.length > 0) {
+      console.log("Posts in component:", posts);
+      console.log("First post images:", posts[0].post_image);
     }
-  }, [posts, fetchPost, user, isLoading]);
+  }, [posts]);
 
-  const userPosts = Array.isArray(posts) ? posts : [];
-
+  // Initialize slides only if not already initialized
   useEffect(() => {
-    console.log(
-      "User posts:",
-      userPosts.map((post) => ({ _id: post._id, post_image: post.post_image, userId: post.userId, caption: post.caption }))
-    );
-    console.log("Current slide state:", currentSlide);
-    console.log("Image error state:", imageError);
-    if (userPosts.length > 0) {
+    if (Object.keys(currentSlide).length === 0 && posts.length > 0) {
       const slidesInit = {};
-      userPosts.forEach((post) => {
+      posts.forEach((post) => {
         if (post._id) slidesInit[post._id] = 0;
       });
       setCurrentSlide(slidesInit);
     }
-  }, [userPosts]);
+  }, [posts, currentSlide]);
 
-  const getFileNameFromPath = (path) => {
-    if (!path || typeof path !== "string" || path.trim() === "") {
-      console.warn("Invalid image path:", path);
-      return "";
-    }
-    return path.replace(/\\/g, "/").replace(/^uploads\//, "").split("/").pop();
-  };
-
+  // Corrected image URL function
   const imageUrl = (imgPath) => {
     if (!imgPath || typeof imgPath !== "string" || imgPath.trim() === "") {
-      console.warn("Invalid image path:", imgPath);
-      return "https://via.placeholder.com/150?text=No+Image";
+      return "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150' viewBox='0 0 24 24' fill='none' stroke='%23ccc' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2' ry='2'%3E%3C/rect%3E%3Cline x1='3' y1='9' x2='21' y2='9'%3E%3C/line%3E%3Cline x1='9' y1='21' x2='9' y2='9'%3E%3C/line%3E%3C/svg%3E";
     }
+    
     if (imgPath.startsWith("http://") || imgPath.startsWith("https://")) {
-      console.log("Using full URL:", imgPath);
       return imgPath;
     }
-    const fileName = getFileNameFromPath(imgPath);
-    const url = fileName ? `${baseUrl}uploads/${fileName}` : "https://via.placeholder.com/150?text=No+Image";
-    console.log("Generated image URL:", url);
-    return url;
+    
+    // Use the correct endpoint that matches your server route
+    return `${baseUrl}/uploads/${imgPath}`;
   };
 
-  const handleImageError = (postId, index) => {
+  // Fixed error handler - now receives src directly
+  const handleImageError = (postId, index, src) => {
     console.error(`Image failed to load for post ${postId}, index ${index}`);
+    console.error("Attempted URL:", src);
     setImageError((prev) => ({ ...prev, [`${postId}-${index}`]: true }));
   };
 
@@ -142,7 +132,7 @@ const ProfilePage = () => {
               </p>
               <div className="flex gap-4 mt-2 text-sm font-medium">
                 <p className={isDark ? "text-white" : "text-gray-700"}>
-                  Posts: <span className="font-bold">{userPosts.length}</span>
+                  Posts: <span className="font-bold">{posts.length}</span>
                 </p>
                 <p className={isDark ? "text-white" : "text-gray-700"}>
                   Friends: <span className="font-bold">136</span>
@@ -171,24 +161,23 @@ const ProfilePage = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
           {error && <p className="text-red-500">{error}</p>}
           {isLoading && <p className={isDark ? "text-white" : "text-gray-700"}>Loading posts...</p>}
-          {!isLoading && userPosts.length === 0 && (
+          {!isLoading && posts.length === 0 && (
             <p className={isDark ? "text-white" : "text-gray-700"}>No posts available for this user.</p>
           )}
 
-          {userPosts.map((post) => {
-            if (!post?._id) {
-              console.warn("Post missing _id:", post);
-              return null;
+          {posts.map((post) => {
+            if (!post?._id) return null;
+
+            // Extract images safely
+            let images = [];
+            if (Array.isArray(post.post_image)) {
+              images = post.post_image.filter(img => 
+                typeof img === "string" && img.trim() !== ""
+              );
             }
 
-            const images = Array.isArray(post.post_image) && post.post_image.length > 0
-              ? post.post_image.filter((img) => typeof img === "string" && img.trim() !== "")
-              : ["https://via.placeholder.com/150?text=No+Image"];
-
-            console.log(`Images for post ${post._id}, post.userId: ${post.userId}, user._id: ${user?._id}, caption: ${post.caption}`, images);
-
             if (images.length === 0) {
-              console.warn(`No valid images for post ${post._id}, post_image:`, post.post_image);
+              images = ["data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150' viewBox='0 0 24 24' fill='none' stroke='%23ccc' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2' ry='2'%3E%3C/rect%3E%3Cline x1='3' y1='9' x2='21' y2='9'%3E%3C/line%3E%3Cline x1='9' y1='21' x2='9' y2='9'%3E%3C/line%3E%3C/svg%3E"];
             }
 
             const currentIndex = currentSlide[post._id] ?? 0;
@@ -208,13 +197,6 @@ const ProfilePage = () => {
                   handleImageError={handleImageError}
                   loading="lazy"
                 />
-                <p
-                  className={`text-sm p-2 ${
-                    isDark ? "text-gray-300" : "text-gray-600"
-                  } truncate`}
-                >
-                  {post.caption || "No caption"}
-                </p>
                 {images.length > 1 && (
                   <div className="absolute inset-0 flex justify-between items-center px-4">
                     <button

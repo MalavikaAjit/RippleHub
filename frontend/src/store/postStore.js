@@ -38,19 +38,23 @@ const usePostStore = create((set) => ({
     }
   },
 
-fetchPost: async () => {
+ fetchPost: async () => {
     set({ isLoading: true, error: null });
     try {
       const response = await axios.get(`${API_URL}/posts`, {
         withCredentials: true,
       });
-      console.log("Fetched posts:", response.data);
+      
+      // Extract the posts array from the response
+      const postsArray = response.data.posts || [];
+      
+      console.log("Extracted posts:", postsArray);
       set({
         isLoading: false,
-        posts: response.data || [],
+        posts: postsArray, // Store the actual posts array
         error: null,
       });
-      return response.data;
+      return postsArray;
     } catch (error) {
       console.error("Fetch post error:", error);
       set({

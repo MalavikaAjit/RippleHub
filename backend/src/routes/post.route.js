@@ -1,7 +1,7 @@
 import express from 'express';
 import { postImageUpload } from '../middleware/multerConnection.js';
 import { createPost, getPost } from '../controller/post.controller.js';
-import { protectAuth } from '../middleware/protectAuth.js'; // ✅ updated correctly
+import { protectAuth } from '../middleware/protectAuth.js'; // 
 
 const router = express.Router();
 

@@ -53,7 +53,7 @@ export const postImageUpload = (req, res, next) => {
       return res.status(400).json({ error: 'At least one image is required' });
     }
 
-    req.imagePaths = req.files.map(file => file.path);
+    req.imagePaths = req.files.map(file => file.filename); 
     next();
   });
 };

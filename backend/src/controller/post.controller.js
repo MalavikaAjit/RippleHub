@@ -4,7 +4,7 @@ export const createPost = async (req, res, next) => {
   try {
     const { caption, privacy } = req.body;
     const userId = req.userId;
-    const imagePaths = req.files.map((file) => file.filename);
+    const imagePaths = req.imagePaths;
 
     if (!imagePaths || imagePaths.length === 0) {
       return res.status(400).json({ error: 'At least one image is required' });
@@ -29,17 +29,14 @@ export const createPost = async (req, res, next) => {
   }
 };
 
-export const getPost = async (req, res, next) => {
+export const getPost = async (req, res) => {
   try {
     const userId = req.userId;
-    console.log("Fetching posts for userId:", userId, "Request headers:", req.headers);
     const posts = await Post.find({ userId }).sort({ createdAt: -1 });
-    res.status(200).json({
-      success: true,
-      posts,
-    });
-  } catch (error) {
-    console.error('getPost error:', error);
-    res.status(500).json({ success: false, message: 'Failed to fetch posts' });
+    console.log("Posts fetched:", posts);
+    res.status(200).json({ success: true, posts });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Failed to fetch posts" });
   }
 };
