@@ -1,5 +1,8 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useAuthStore } from "../store/authStore";
+import { useThemeStore } from "../store/themeStore";
+import { usePostInteractionStore } from "../store/postInteractionStore";
+import axios from "axios";
 import {
   Heart,
   MessageCircle,
@@ -7,197 +10,242 @@ import {
   Pencil,
   Trash2,
 } from "lucide-react";
-import {
-  
-  FaGlobeAmericas,
-  FaLock,
-  FaUserFriends,
-} from "react-icons/fa";
-import { FaCircleCheck, FaCircleXmark, FaCircleUser } from "react-icons/fa6";
-import { useOutletContext, Navigate, useNavigate } from "react-router-dom";
+import { FaGlobeAmericas } from "react-icons/fa";
+import { useNavigate, useOutletContext } from "react-router-dom";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+
+dayjs.extend(relativeTime);
 
 const DashboardPage = () => {
-
   const { user } = useAuthStore();
   const { isDark } = useThemeStore();
   const { isCollapsed } = useOutletContext();
-  const [showProfile, setShowProfile] = useState(false);
-  const [showPostMenu, setShowPostMenu] = useState(false);
-  const profileRef = useRef(null);
-  const postMenuRef = useRef(null);
-  const privacy = "public";
+  const navigate = useNavigate();
+  const postMenuRefs = useRef({});
 
+  const [posts, setPosts] = useState([]);
+  const [commentInputs, setCommentInputs] = useState({});
+  const [activePostMenuId, setActivePostMenuId] = useState(null);
 
-   const navigate = useNavigate();
+  const { fetchInteractions, toggleLike, addComment, interactions } =
+    usePostInteractionStore();
+
+  const fetchPosts = async () => {
+    try {
+      const res = await axios.get("http://localhost:2057/api/friends-feed", {
+        withCredentials: true,
+      });
+      setPosts(res.data);
+      res.data.forEach((post) => fetchInteractions(post._id));
+    } catch (err) {
+      console.error("Failed to load posts", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchPosts();
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      const allRefs = Object.values(postMenuRefs.current);
+      if (allRefs.every((ref) => !ref?.contains(event.target))) {
+        setActivePostMenuId(null);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleLike = async (postId) => {
+    await toggleLike(postId);
+    fetchInteractions(postId); // refresh interaction
+  };
+
+  const handleCommentSubmit = async (postId) => {
+    const text = commentInputs[postId]?.trim();
+    if (!text) return;
+    await addComment(postId, text);
+    setCommentInputs((prev) => ({ ...prev, [postId]: "" }));
+    fetchInteractions(postId); // refresh interaction
+  };
+
   return (
     <div
       className={`${
         isDark ? "bg-[#0d0d0d] text-white" : "bg-[#f3f6fa] text-gray-800"
       } min-h-screen transition-all duration-300`}
     >
-      {/* Top Bar */}
       <div
         className={`${
           isDark
             ? "bg-[#121212] border-gray-700"
             : "bg-[#f3f6fa] border-gray-200"
-        } sticky top-0 z-30 px-6 py-4 flex justify-between items-center border-b`}
+        } sticky top-0 z-30 px-6 py-4 flex justify-end border-b`}
       >
-        <div className="flex justify-end w-full">
-        {/* Profile Avatar */}
-            <div className="relative ml-4">
-              <div
-                onClick={() => navigate("/profile")}
-                className="w-12 h-12 rounded-full bg-gradient-to-br from-[#27b1ab] to-[#1c5e5a] p-[2px] cursor-pointer animate-pulse hover:scale-105 transition"
-              >
-                <div className="w-full h-full rounded-full overflow-hidden border-2 border-white shadow-md">
-                  <img
-                    src="https://images.unsplash.com/photo-1506744038136-46273834b3fb"
-                    alt="Profile"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              </div>
+        <div className="relative ml-4">
+          <div
+            onClick={() => navigate("/profile")}
+            className="w-12 h-12 rounded-full bg-gradient-to-br from-[#27b1ab] to-[#1c5e5a] p-[2px] cursor-pointer animate-pulse hover:scale-105 transition"
+          >
+            <div className="w-full h-full rounded-full overflow-hidden border-2 border-white shadow-md">
+              <img
+                src="https://images.unsplash.com/photo-1506744038136-46273834b3fb"
+                alt="Profile"
+                className="w-full h-full object-cover"
+              />
             </div>
+          </div>
         </div>
       </div>
 
-      {/* Feed */}
-      <div className="flex items-center justify-center px-4 py-6">
-        <div
-          className={`rounded-lg shadow-md overflow-hidden max-w-xl w-full transition-all ${
-            isDark ? "bg-[#1e1e1e]" : "bg-white"
-          }`}
-        >
-          <div className="flex items-center justify-between p-4">
-            <div className="flex items-center space-x-3">
-              <img
-                src="https://images.unsplash.com/photo-1506744038136-46273834b3fb"
-                alt="Avatar"
-                className="w-10 h-10 rounded-full object-cover border border-[#288683]"
-              />
-              <div>
-                <h3 className="font-semibold text-base">{user?.firstName}</h3>
-                <span className="text-sm flex items-center space-x-1 text-gray-400">
-                  <span>
-                    Shared a Ripple • {new Date().toLocaleTimeString()}
+      <div className="flex flex-col items-center px-4 py-6 gap-8">
+        {posts.map((post) => (
+          <div
+            key={post._id}
+            className={`rounded-lg shadow-md overflow-hidden max-w-xl w-full transition-all ${
+              isDark ? "bg-[#1e1e1e]" : "bg-white"
+            }`}
+          >
+            <div className="flex items-center justify-between p-4">
+              <div className="flex items-center space-x-3">
+                <img
+                  src="https://images.unsplash.com/photo-1506744038136-46273834b3fb"
+                  alt="Avatar"
+                  className="w-10 h-10 rounded-full object-cover border border-[#288683]"
+                />
+                <div>
+                  <h3 className="font-semibold text-base">
+                    {post.userId?.firstName}
+                  </h3>
+                  <span className="text-sm flex items-center text-gray-400">
+                    Shared a Ripple • {dayjs(post.createdAt).fromNow()}
+                    {post.privacy === "public" && (
+                      <FaGlobeAmericas className="ml-2" title="Public" />
+                    )}
                   </span>
-                  {privacy === "public" && (
-                    <FaGlobeAmericas className="ml-2" title="Public" />
-                  )}
-                </span>
+                </div>
               </div>
-            </div>
 
-            {/* Post Menu */}
-            <div className="relative">
-              <button
-                onClick={() => setShowPostMenu(!showPostMenu)}
-                className={`p-2 rounded-full text-gray-500 ${
-                  isDark ? "hover:bg-[#2a2a2a]" : "hover:bg-gray-100"
-                }`}
-              >
-                <MoreHorizontal className="w-5 h-5" />
-              </button>
-
-              {showPostMenu && (
-                <div
-                  ref={postMenuRef}
-                  className={`fixed top-[104px] w-48 py-2 z-50 rounded-md text-sm shadow-xl transition-all
-                  ${isCollapsed ? "right-[440px]" : "right-[360px]"} 
-                  ${
-                    isDark
-                      ? "bg-[#1e1e1e] text-gray-200 border border-gray-700"
-                      : "bg-white text-gray-700 border border-gray-100"
+              <div className="relative">
+                <button
+                  onClick={() =>
+                    setActivePostMenuId(
+                      activePostMenuId === post._id ? null : post._id
+                    )
+                  }
+                  className={`p-2 rounded-full text-gray-500 cursor-pointer ${
+                    isDark ? "hover:bg-[#2a2a2a]" : "hover:bg-gray-100"
                   }`}
                 >
-                  <button className="flex items-center w-full px-4 py-2 hover:bg-gray-100 dark:hover:bg-[#3a3a3a]">
-                    <Pencil className="w-4 h-4 mr-2 text-orange-500" /> Edit
-                    Post
-                  </button>
-                  <button className="flex items-center w-full px-4 py-2 hover:bg-gray-100 dark:hover:bg-[#3a3a3a]">
-                    <Trash2 className="w-4 h-4 mr-2 text-red-500" /> Delete Post
-                  </button>
-                  <div className="border-t my-2 border-gray-200 dark:border-gray-700"></div>
-                  <div className="px-4 py-1 text-xs text-gray-500 font-semibold">
-                    Privacy
+                  <MoreHorizontal className="w-5 h-5" />
+                </button>
+                {activePostMenuId === post._id && (
+                  <div
+                    ref={(el) => (postMenuRefs.current[post._id] = el)}
+                    className={`absolute top-10 right-0 w-48 py-2 z-50 rounded-md text-sm shadow-xl transition-all ${
+                      isDark
+                        ? "bg-[#1e1e1e] text-gray-200 border border-gray-700"
+                        : "bg-white text-gray-700 border border-gray-100"
+                    }`}
+                  >
+                    <button className="flex items-center w-full px-4 py-2 hover:bg-gray-100 dark:hover:bg-[#3a3a3a]">
+                      <Pencil className="w-4 h-4 mr-2 text-orange-500" /> Edit
+                      Post
+                    </button>
+                    <button className="flex items-center w-full px-4 py-2 hover:bg-gray-100 dark:hover:bg-[#3a3a3a]">
+                      <Trash2 className="w-4 h-4 mr-2 text-red-500" /> Delete
+                      Post
+                    </button>
                   </div>
-                  <button className="flex items-center w-full px-4 py-2 hover:bg-gray-100 dark:hover:bg-[#3a3a3a]">
-                    <FaLock className="w-3 h-3 mr-2 text-gray-500" /> Only Me
-                  </button>
-                  <button className="flex items-center w-full px-4 py-2 hover:bg-gray-100 dark:hover:bg-[#3a3a3a]">
-                    <FaUserFriends className="w-3 h-3 mr-2 text-gray-500" />{" "}
-                    Friends
-                  </button>
-                  <button className="flex items-center w-full px-4 py-2 hover:bg-gray-100 dark:hover:bg-[#3a3a3a]">
-                    <FaGlobeAmericas className="w-3 h-3 mr-2 text-gray-500" />{" "}
-                    Public
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Ripple Image */}
-          <div
-            className={`${
-              isDark ? "bg-gray-800" : "bg-gray-100"
-            } aspect-square`}
-          >
-            <img
-              src="https://images.unsplash.com/photo-1506744038136-46273834b3fb"
-              alt="Ripple"
-              className="w-full h-full object-cover"
-            />
-          </div>
-
-          {/* Actions */}
-          <div className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center space-x-4">
-                <button className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-[#2a2a2a]">
-                  <Heart className="w-6 h-6 text-[#288683]" />
-                </button>
-                <button className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-[#2a2a2a]">
-                  <MessageCircle className="w-6 h-6 text-[#288683]" />
-                </button>
+                )}
               </div>
-            </div>
-
-            <p className="text-sm mb-3">
-              <span className="font-semibold mr-2">{user?.firstName}</span>
-              What if coding was taught with comic-style storytelling to spark
-              logic in kids?
-            </p>
-
-            <div className="space-y-2 mb-3">
-              <p className="text-sm">
-                <span className="font-semibold mr-2">Alex:</span> Brilliant! I’d
-                read that in school for sure.
-              </p>
             </div>
 
             <div
-              className={`flex items-center space-x-2 pt-3 border-t ${
-                isDark ? "border-gray-700" : "border-gray-100"
-              }`}
+              className={`${
+                isDark ? "bg-gray-800" : "bg-gray-100"
+              } aspect-square`}
             >
-              <input
-                type="text"
-                placeholder="Add your insight..."
-                className={`flex-1 px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-[#288683] text-sm
-                ${
-                  isDark
-                    ? "bg-[#2a2a2a] border-gray-600 text-gray-200"
-                    : "bg-white border-gray-200 text-gray-800"
-                }`}
+              <img
+                src={`http://localhost:2057/uploads/${post.post_image[0]}`}
+                alt="Ripple"
+                className="w-full h-full object-cover"
               />
-              <button className="px-4 py-2 bg-[#288683] text-white rounded-md hover:bg-opacity-90 text-sm font-medium">
-                Submit
-              </button>
+            </div>
+
+            <div className="p-4">
+              <div className="flex items-center justify-start mb-3 space-x-4">
+                <button
+                  onClick={() => handleLike(post._id)}
+                  className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-[#2a2a2a] cursor-pointer"
+                >
+                  <Heart
+                    className="w-6 h-6"
+                    fill={interactions[post._id]?.isLiked ? "#288683" : "none"}
+                    color={
+                      interactions[post._id]?.isLiked
+                        ? "#288683"
+                        : isDark
+                        ? "#ffffff"
+                        : "#000000"
+                    }
+                  />
+                </button>
+              </div>
+
+              <p className="text-sm mb-3">
+                <span className="font-semibold mr-2">
+                  {post.userId?.firstName}
+                </span>
+                {post.caption}
+              </p>
+
+              <div className="space-y-2 mb-3">
+                {(interactions[post._id]?.comments || []).map((c, idx) => (
+                  <p key={idx} className="text-sm">
+                    <span className="font-semibold mr-2">
+                      {c.user?.firstName || "User"}:
+                    </span>
+                    {c.text}
+                  </p>
+                ))}
+              </div>
+
+              <div
+                className={`flex items-center space-x-2 pt-3 border-t ${
+                  isDark ? "border-gray-700" : "border-gray-100"
+                }`}
+              >
+                <input
+                  type="text"
+                  placeholder="Add your insight..."
+                  value={commentInputs[post._id] || ""}
+                  onChange={(e) =>
+                    setCommentInputs((prev) => ({
+                      ...prev,
+                      [post._id]: e.target.value,
+                    }))
+                  }
+                  className={`flex-1 px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-[#288683] text-sm ${
+                    isDark
+                      ? "bg-[#2a2a2a] border-gray-600 text-gray-200"
+                      : "bg-white border-gray-200 text-gray-800"
+                  }`}
+                />
+                <button
+                  onClick={() => handleCommentSubmit(post._id)}
+                  className="p-2 rounded-full bg-[#288683] hover:bg-opacity-90 text-white cursor-pointer"
+                  title="Submit"
+                >
+                  <MessageCircle className="w-5 h-5" />
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        ))}
       </div>
     </div>
   );
