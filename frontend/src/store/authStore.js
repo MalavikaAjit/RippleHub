@@ -146,4 +146,44 @@ export const useAuthStore = create((set) => ({
       throw error; // rethrow the error to handle it in the component
     }
   },
+  updateProfile: async (firstName, lastName, email) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await axios.patch(`${API_URL}/profile`, {
+        firstName,
+        lastName,
+        email,
+      });
+      set((state) => ({
+        user: { ...state.user, firstName, lastName, email },
+        isLoading: false,
+        error: null,
+      }));
+      return response.data;
+    } catch (error) {
+      set({
+        error: error.response?.data?.message || "Failed to update profile",
+        isLoading: false,
+      });
+      throw error;
+    }
+  },
+
+  updatePassword: async (currentPassword, newPassword) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await axios.patch(`${API_URL}/security`, {
+        currentPassword,
+        newPassword,
+      });
+      set({ isLoading: false, error: null });
+      return response.data;
+    } catch (error) {
+      set({
+        error: error.response?.data?.message || "Failed to update password",
+        isLoading: false,
+      });
+      throw error;
+    }
+  },
 }));

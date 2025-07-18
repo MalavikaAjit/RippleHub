@@ -16,6 +16,8 @@ import LogInPage from "./pages/LogInPage";
 import EmailVerification from "./pages/EmailVerification";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
+import ProfileDetails from "./pages/DashboardPages/ProfileDetails";
+import ProfileSettingsPage from "./pages/DashboardPages/ProfileSettingPage";
 // protect routes that require authentication
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, user } = useAuthStore();
@@ -59,6 +61,8 @@ function App() {
         <Route path="/upload" element={<UploadPage />} />
         <Route path="/find" element={<FindPage />} />
         <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/edit" element={<ProfileDetails/>} />
+        <Route path="/profilesetting" element={<ProfileSettingsPage/>} />
       </Route>
 
       <Route
