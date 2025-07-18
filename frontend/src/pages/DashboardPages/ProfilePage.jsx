@@ -3,7 +3,7 @@ import { FaCheckCircle, FaCog, FaEdit, FaArrowLeft, FaArrowRight } from "react-i
 import { useThemeStore } from "../../store/themeStore";
 import { useAuthStore } from "../../store/authStore";
 import usePostStore from "../../store/postStore";
-
+import { Navigate, useNavigate } from "react-router-dom";
 // Ensure baseUrl has no trailing slash
 const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:2057";
 
@@ -102,6 +102,7 @@ const ProfilePage = () => {
       [postId]: prev[postId] < count - 1 ? prev[postId] + 1 : count - 1,
     }));
   };
+ const navigate = useNavigate();
 
   return (
     <div
@@ -141,10 +142,10 @@ const ProfilePage = () => {
             </div>
           </div>
           <div className="flex gap-3">
-            <button className="px-3 py-2 bg-[#288683] text-white text-sm rounded-md hover:bg-[#1c5e5a] flex items-center gap-1">
+            <button className="px-3 py-2 bg-[#288683] text-white text-sm rounded-md hover:bg-[#1c5e5a] flex items-center gap-1" onClick={() => navigate("/edit")}>
               <FaEdit /> Edit
             </button>
-            <button className="px-3 py-2 bg-gray-300 text-gray-800 text-sm rounded-md hover:bg-gray-400 flex items-center gap-1">
+            <button className="px-3 py-2 bg-gray-300 text-gray-800 text-sm rounded-md hover:bg-gray-400 flex items-center gap-1" onClick= {() => navigate("/profilesetting")}>
               <FaCog /> Settings
             </button>
           </div>
