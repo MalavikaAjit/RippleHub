@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useAuthStore } from "../store/authStore";
+import { useThemeStore } from "../store/themeStore";
 import {
   Heart,
   MessageCircle,
@@ -13,11 +14,9 @@ import {
   FaLock,
   FaUserFriends,
 } from "react-icons/fa";
-import { FaCircleCheck, FaCircleXmark, FaCircleUser } from "react-icons/fa6";
 import { useOutletContext, Navigate, useNavigate } from "react-router-dom";
 
 const DashboardPage = () => {
-
   const { user } = useAuthStore();
   const { isDark } = useThemeStore();
   const { isCollapsed } = useOutletContext();
