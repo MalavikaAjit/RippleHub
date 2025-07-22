@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import { connectDB } from "./db/connectDB.js";
+import postInteractionRoutes from "./routes/postInteraction.routes.js";
 
 import authRoutes from "./routes/auth.route.js";
 
@@ -16,6 +17,7 @@ app.use(express.json()); //allows us to parse incoming requests:req.body
 app.use(cookieParser()); //allows us to parse cookies from incoming requests:req.cookies
 
 app.use("/api/auth", authRoutes); //routes for api auth
+app.use("/api/", postInteractionRoutes);
 
 app.listen(PORT, () => {
   connectDB();

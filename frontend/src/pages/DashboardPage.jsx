@@ -17,6 +17,14 @@ import relativeTime from "dayjs/plugin/relativeTime";
 
 dayjs.extend(relativeTime);
 
+import {
+  
+  FaGlobeAmericas,
+  FaLock,
+  FaUserFriends,
+} from "react-icons/fa";
+import { useOutletContext, Navigate, useNavigate } from "react-router-dom";
+
 const DashboardPage = () => {
   const { user } = useAuthStore();
   const { isDark } = useThemeStore();
