@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import axios from "axios";
 
+export const useFriendRequestStore = create((set) => ({
 export const useFriendRequestStore = create((set, get) => ({
   requests: [],
   loading: false,
@@ -20,6 +21,23 @@ export const useFriendRequestStore = create((set, get) => ({
     }
   },
 
+  respondToRequest: async (requestId, action) => {
+    try {
+      const res = await axios.patch(
+        `http://localhost:2057/api/friend-request/respond/${requestId}`,
+        { action },
+        { withCredentials: true }
+      );
+      const updated = res.data.updatedRequest;
+      set((state) => ({
+        requests: state.requests.map((r) =>
+          r._id === requestId ? { ...r, status: updated.status } : r
+        ),
+      }));
+      return updated.status;
+    } catch (err) {
+      console.error("Error responding to request", err);
+      throw err;
   respondToRequest: async (id, action) => {
     try {
       await axios.patch(
