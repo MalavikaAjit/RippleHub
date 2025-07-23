@@ -46,7 +46,9 @@ const MessagePage = () => {
 
   useEffect(() => {
     if (!user || !socket) return;
+
     console.log("Joining socket room for user:", user._id);
+
     socket.emit("join", user._id);
 
     const onReceiveMessage = (msg) => {
