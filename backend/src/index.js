@@ -6,6 +6,9 @@ import { connectDB } from "./db/connectDB.js";
 import path from "path";
 import { fileURLToPath } from 'url';
 
+import postInteractionRoutes from "./routes/postInteraction.routes.js";
+
+
 import authRoutes from "./routes/auth.route.js";
 
 import postRoutes from "./routes/post.route.js";
@@ -27,6 +30,7 @@ app.use("/uploads", express.static("uploads"));
 app.use(cookieParser()); //allows us to parse cookies from incoming requests:req.cookies
 
 app.use("/api/auth", authRoutes); //routes for api auth
+app.use("/api/", postInteractionRoutes);
 
 app.use("/api", postRoutes);
 
