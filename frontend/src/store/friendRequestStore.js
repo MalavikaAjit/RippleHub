@@ -2,7 +2,6 @@ import { create } from "zustand";
 import axios from "axios";
 
 export const useFriendRequestStore = create((set) => ({
-export const useFriendRequestStore = create((set, get) => ({
   requests: [],
   loading: false,
 
@@ -13,7 +12,6 @@ export const useFriendRequestStore = create((set, get) => ({
         { receiver: receiverId },
         { withCredentials: true }
       );
-      await get().fetchRequests(); // Refresh status after sending
       return res.data;
     } catch (err) {
       console.error("Error sending request", err);
@@ -38,16 +36,6 @@ export const useFriendRequestStore = create((set, get) => ({
     } catch (err) {
       console.error("Error responding to request", err);
       throw err;
-  respondToRequest: async (id, action) => {
-    try {
-      await axios.patch(
-        `http://localhost:2057/api/friend-request/${id}`,
-        { action },
-        { withCredentials: true }
-      );
-      await get().fetchRequests(); // Refresh
-    } catch (err) {
-      console.error("Error responding to request", err);
     }
   },
 
@@ -70,7 +58,6 @@ export const useFriendRequestStore = create((set, get) => ({
         `http://localhost:2057/api/friend-request/${requestId}`,
         { withCredentials: true }
       );
-      await get().fetchRequests();
     } catch (err) {
       console.error("Error cancelling request", err);
       throw err;

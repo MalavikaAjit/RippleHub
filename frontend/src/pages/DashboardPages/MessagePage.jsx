@@ -16,12 +16,18 @@ const MessagePage = () => {
   const { user } = useAuthStore();
   const { socket } = useSocketStore();
   const { isDark } = useThemeStore();
+  const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:2057";
 
   useEffect(() => {
     const fetchUsers = async () => {
       const res = await axios.get("http://localhost:2057/api/user/all");
       const filtered = res.data.filter((u) => u._id !== user._id);
       setUsers(filtered);
+
+      //auto sect the first user as selected chat if none is selected
+      if (filtered.length > 0 && !selectedChat) {
+        setSelectedChat(filtered[0]);
+      }
     };
     if (user) fetchUsers();
   }, [user]);
@@ -46,9 +52,7 @@ const MessagePage = () => {
 
   useEffect(() => {
     if (!user || !socket) return;
-
     console.log("Joining socket room for user:", user._id);
-
     socket.emit("join", user._id);
 
     const onReceiveMessage = (msg) => {
@@ -59,7 +63,21 @@ const MessagePage = () => {
           return exists ? prev : [...prev, msg];
         });
 
-        if (msg.sender === chatId) {
+        // Update sidebar lastMessage
+        setUsers((prevUsers) =>
+          prevUsers.map((u) => {
+            if (u._id === msg.sender || u._id === msg.receiver) {
+              return {
+                ...u,
+                lastMessage: msg.message,
+                lastMessageAt: msg.createdAt || new Date().toISOString(),
+              };
+            }
+            return u;
+          })
+        );
+
+        if (msg.sender === chatId && selectedChat?._id === msg.sender) {
           socket.emit("seen_messages", {
             sender: chatId,
             receiver: user._id,
@@ -173,10 +191,18 @@ const MessagePage = () => {
               }`}
             >
               <img
-                src={`https://i.pravatar.cc/150?u=${u._id}`}
+                src={
+                  u?.profileImage
+                    ? u.profileImage.startsWith("http") ||
+                      u.profileImage.startsWith("blob:")
+                      ? u.profileImage
+                      : `${baseUrl}${u.profileImage}` // correct: no extra `/` or `/uploads`
+                    : "https://dummyimage.com/100x100/cccccc/000000&text=No+Image"
+                }
                 alt={u.firstName}
                 className="w-10 h-10 rounded-full object-cover"
               />
+
               <div className="flex-1">
                 <h4
                   className={`font-medium text-sm flex items-center gap-2 ${
@@ -193,7 +219,11 @@ const MessagePage = () => {
                     isDark ? "text-gray-400" : "text-gray-500"
                   }`}
                 >
-                  {u.lastMessage || "No messages yet"}
+                  {u.lastMessage
+                    ? u.lastMessage.length > 30
+                      ? u.lastMessage.slice(0, 30) + "..."
+                      : u.lastMessage
+                    : "No messages yet"}
                 </p>
               </div>
               <span
@@ -201,8 +231,8 @@ const MessagePage = () => {
                   isDark ? "text-gray-500" : "text-gray-400"
                 }`}
               >
-                {!u.isOnline && u.lastOnlineAt
-                  ? formatDistanceToNow(new Date(u.lastOnlineAt), {
+                {u.lastMessageAt
+                  ? formatDistanceToNow(new Date(u.lastMessageAt), {
                       addSuffix: true,
                     })
                   : ""}
@@ -227,10 +257,18 @@ const MessagePage = () => {
           {selectedChat && (
             <>
               <img
-                src={`https://i.pravatar.cc/150?u=${selectedChat._id}`}
+                src={
+                  selectedChat?.profileImage
+                    ? selectedChat.profileImage.startsWith("http") ||
+                      selectedChat.profileImage.startsWith("blob:")
+                      ? selectedChat.profileImage
+                      : `${baseUrl}${selectedChat.profileImage}`
+                    : "https://dummyimage.com/100x100/cccccc/000000&text=No+Image"
+                }
                 alt="Chat"
-                className="w-10 h-10 rounded-full"
+                className="w-10 h-10 rounded-full object-cover"
               />
+
               <div className="flex flex-col">
                 <h4
                   className={`text-base font-semibold ${

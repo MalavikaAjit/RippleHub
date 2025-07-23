@@ -2,6 +2,8 @@ import React, { useEffect, useState, useRef } from "react";
 import { useAuthStore } from "../store/authStore";
 import { useThemeStore } from "../store/themeStore";
 import { usePostInteractionStore } from "../store/postInteractionStore";
+import { useProfileStore } from "../store/profileStore";
+
 import axios from "axios";
 import {
   Heart,
@@ -10,20 +12,11 @@ import {
   Pencil,
   Trash2,
 } from "lucide-react";
-import { FaGlobeAmericas } from "react-icons/fa";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 
 dayjs.extend(relativeTime);
-
-import {
-  
-  FaGlobeAmericas,
-  FaLock,
-  FaUserFriends,
-} from "react-icons/fa";
-import { useOutletContext, Navigate, useNavigate } from "react-router-dom";
 
 const DashboardPage = () => {
   const { user } = useAuthStore();
@@ -31,13 +24,40 @@ const DashboardPage = () => {
   const { isCollapsed } = useOutletContext();
   const navigate = useNavigate();
   const postMenuRefs = useRef({});
+  const profile = useProfileStore((state) => state.profile);
+  const fetchProfile = useProfileStore((state) => state.fetchProfile);
 
   const [posts, setPosts] = useState([]);
   const [commentInputs, setCommentInputs] = useState({});
   const [activePostMenuId, setActivePostMenuId] = useState(null);
 
-  const { fetchInteractions, toggleLike, addComment, interactions } =
-    usePostInteractionStore();
+  const fetchInteractions = usePostInteractionStore(
+    (state) => state.fetchInteractions
+  );
+  const toggleLike = usePostInteractionStore((state) => state.toggleLike);
+  const addComment = usePostInteractionStore((state) => state.addComment);
+  const interactions = usePostInteractionStore((state) => state.interactions);
+
+  const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:2057";
+
+  useEffect(() => {
+    if (user?._id) {
+      fetchProfile(user._id);
+    }
+  }, [user?._id]);
+
+  const getProfileImageUrl = () => {
+    if (!profile?.profileImage || typeof profile.profileImage !== "string") {
+      return "https://dummyimage.com/100x100/cccccc/000000&text=No+Image";
+    }
+    if (
+      profile.profileImage.startsWith("http") ||
+      profile.profileImage.startsWith("blob:")
+    ) {
+      return profile.profileImage;
+    }
+    return `http://localhost:2057/${profile.profileImage.replace(/^\/?/, "")}`;
+  };
 
   const fetchPosts = async () => {
     try {
@@ -100,9 +120,9 @@ const DashboardPage = () => {
           >
             <div className="w-full h-full rounded-full overflow-hidden border-2 border-white shadow-md">
               <img
-                src="https://images.unsplash.com/photo-1506744038136-46273834b3fb"
-                alt="Profile"
-                className="w-full h-full object-cover"
+                src={getProfileImageUrl()}
+                alt="Avatar"
+                className="w-10 h-10 rounded-full object-cover border border-[#288683]"
               />
             </div>
           </div>
@@ -120,24 +140,32 @@ const DashboardPage = () => {
             <div className="flex items-center justify-between p-4">
               <div className="flex items-center space-x-3">
                 <img
-                  src="https://images.unsplash.com/photo-1506744038136-46273834b3fb"
+                  src={
+                    post.userId?.profileImage
+                      ? post.userId.profileImage.startsWith("http") ||
+                        post.userId.profileImage.startsWith("blob:")
+                        ? post.userId.profileImage
+                        : `http://localhost:2057/${post.userId.profileImage.replace(
+                            /^\/?/,
+                            ""
+                          )}`
+                      : "https://dummyimage.com/100x100/cccccc/000000&text=No+Image"
+                  }
                   alt="Avatar"
                   className="w-10 h-10 rounded-full object-cover border border-[#288683]"
                 />
+
                 <div>
                   <h3 className="font-semibold text-base">
                     {post.userId?.firstName}
                   </h3>
                   <span className="text-sm flex items-center text-gray-400">
                     Shared a Ripple • {dayjs(post.createdAt).fromNow()}
-                    {post.privacy === "public" && (
-                      <FaGlobeAmericas className="ml-2" title="Public" />
-                    )}
                   </span>
                 </div>
               </div>
 
-              <div className="relative">
+              {/* <div className="relative">
                 <button
                   onClick={() =>
                     setActivePostMenuId(
@@ -159,17 +187,25 @@ const DashboardPage = () => {
                         : "bg-white text-gray-700 border border-gray-100"
                     }`}
                   >
-                    <button className="flex items-center w-full px-4 py-2 hover:bg-gray-100 dark:hover:bg-[#3a3a3a]">
+                    <button
+                      className={`flex items-center w-full px-4 py-2 transition ${
+                        isDark ? "hover:bg-[#3a3a3a]" : "hover:bg-gray-100"
+                      }`}
+                    >
                       <Pencil className="w-4 h-4 mr-2 text-orange-500" /> Edit
                       Post
                     </button>
-                    <button className="flex items-center w-full px-4 py-2 hover:bg-gray-100 dark:hover:bg-[#3a3a3a]">
+                    <button
+                      className={`flex items-center w-full px-4 py-2 transition ${
+                        isDark ? "hover:bg-[#3a3a3a]" : "hover:bg-gray-100"
+                      }`}
+                    >
                       <Trash2 className="w-4 h-4 mr-2 text-red-500" /> Delete
                       Post
                     </button>
                   </div>
                 )}
-              </div>
+              </div> */}
             </div>
 
             <div
@@ -185,10 +221,12 @@ const DashboardPage = () => {
             </div>
 
             <div className="p-4">
-              <div className="flex items-center justify-start mb-3 space-x-4">
+              <div className="flex items-center justify-start mb-3 space-x-2">
                 <button
                   onClick={() => handleLike(post._id)}
-                  className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-[#2a2a2a] cursor-pointer"
+                  className={`p-2 rounded-full cursor-pointer transition ${
+                    isDark ? "hover:bg-[#2a2a2a]" : "hover:bg-gray-100"
+                  }`}
                 >
                   <Heart
                     className="w-6 h-6"

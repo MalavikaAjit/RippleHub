@@ -39,6 +39,14 @@ const userSchema = new mongoose.Schema(
     resetPasswordExpiresAt: Date,
     verificationToken: String,
     verificationTokenExpiresAt: Date,
+
+    socketId: {
+      type: String,
+      default: null,
+    },
+
+    bio: { type: String, default: "" },
+    profileImage: { type: String, default: "" },
   },
   { timestamps: true }
 );

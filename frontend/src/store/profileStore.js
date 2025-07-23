@@ -1,55 +1,64 @@
 import { create } from "zustand";
 import axios from "axios";
 
+const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:2057";
+
+// Set axios defaults
+axios.defaults.withCredentials = true;
+
 export const useProfileStore = create((set) => ({
   profile: null,
   loading: false,
   error: null,
 
-  // Fetch profile
   fetchProfile: async (userId) => {
-    set({ loading: true, error: null });
-    try {
-      const response = await axios.get("http://localhost:2057/api/profile/getprofile", {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`, // Assuming JWT token for auth
-        },
-      });
-      set({ profile: response.data.profile, loading: false });
-    } catch (error) {
-      set({ error: error.response?.data?.error || "Failed to fetch profile", loading: false });
+    if (!userId) {
+      console.log("fetchProfile: No userId provided");
+      set({ error: "User ID is required to fetch profile", loading: false });
+      return;
     }
-  },
-
-  // Update or create profile
-  createProfile: async ({ userId, bio, profileImage }) => {
     set({ loading: true, error: null });
     try {
-      const formData = new FormData();
-      formData.append("userId", userId);
-      formData.append("bio", bio);
-      if (profileImage) {
-        formData.append("profileImage", profileImage);
-      }
-
-      const response = await axios.post(
-        "http://localhost:2057/api/profile",
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
-      set({ profile: response.data.profile, loading: false });
-      return response.data;
+      console.log("Fetching profile for userId:", userId);
+      const response = await axios.get(`${baseUrl}/api/user/profile/${userId}`);
+      set({ profile: response.data, loading: false, error: null });
+      console.log("Profile fetched:", response.data);
     } catch (error) {
-      set({ error: error.response?.data?.error || "Failed to update profile", loading: false });
+      const errorMsg =
+        error.response?.data?.message || "Failed to fetch profile";
+      console.error("fetchProfile error:", errorMsg, error);
+      set({ error: errorMsg, loading: false });
       throw error;
     }
   },
 
-  // Clear profile (optional, e.g., for logout)
-  clearProfile: () => set({ profile: null, error: null, loading: false }),
+  updateProfile: async (userId, formData) => {
+    if (!userId) {
+      console.log("updateProfile: No userId provided");
+      set({ error: "User ID is required to update profile", loading: false });
+      throw new Error("User ID is required");
+    }
+    set({ loading: true, error: null });
+    try {
+      console.log("Updating profile for userId:", userId);
+      const response = await axios.put(
+        `${baseUrl}/api/user/update-profile`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+      set({ profile: response.data, loading: false, error: null });
+      console.log("Profile updated:", response.data);
+      return response.data;
+    } catch (error) {
+      const errorMsg =
+        error.response?.data?.message || "Failed to update profile";
+      console.error("updateProfile error:", errorMsg, error);
+      set({ error: errorMsg, loading: false });
+      throw error;
+    }
+  },
 }));

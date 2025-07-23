@@ -1,9 +1,7 @@
 import { create } from "zustand";
 import axios from "axios";
 
-const API_URL = "http://localhost:2057/api";
-
-axios.defaults.withCredentials = true; // Send cookies with every request
+const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:2057";
 
 const usePostStore = create((set) => ({
   isLoading: false,
@@ -14,7 +12,7 @@ const usePostStore = create((set) => ({
   uploadPost: async (formData) => {
     set({ isLoading: true, error: null, success: null });
     try {
-      const response = await axios.post(`${API_URL}/posts`, formData, {
+      const response = await axios.post(`${baseUrl}/api/posts`, formData, {
         withCredentials: true,
         headers: {
           "Content-Type": "multipart/form-data",
@@ -38,20 +36,20 @@ const usePostStore = create((set) => ({
     }
   },
 
- fetchPost: async () => {
+  fetchPost: async () => {
     set({ isLoading: true, error: null });
     try {
-      const response = await axios.get(`${API_URL}/posts`, {
+      const response = await axios.get(`${baseUrl}/api/posts`, {
         withCredentials: true,
       });
-      
+
       // Extract the posts array from the response
       const postsArray = response.data.posts || [];
-      
+
       console.log("Extracted posts:", postsArray);
       set({
         isLoading: false,
-        posts: postsArray, // Store the actual posts array
+        posts: postsArray,
         error: null,
       });
       return postsArray;
@@ -65,7 +63,56 @@ const usePostStore = create((set) => ({
       throw error;
     }
   },
-  clearMessages: () => set({ error: null, success: null }),
+
+  deletePost: async (postId) => {
+    set({ isLoading: true, error: null, success: null });
+    try {
+      await axios.delete(`${baseUrl}/api/posts/${postId}`, {
+        withCredentials: true,
+      });
+      set((state) => ({
+        posts: state.posts.filter((p) => p._id !== postId),
+        success: "Post deleted successfully",
+        isLoading: false,
+      }));
+    } catch (err) {
+      console.error("Delete post failed:", err);
+      set({ error: "Failed to delete post", isLoading: false });
+    }
+  },
+  updatePost: async (postId, formData) => {
+    set({ isLoading: true, error: null, success: null });
+    try {
+      const res = await axios.put(`${baseUrl}/api/posts/${postId}`, formData, {
+        withCredentials: true,
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      set((state) => ({
+        posts: state.posts.map((p) =>
+          p._id === postId ? res.data.updatedPost : p
+        ),
+        isLoading: false,
+        success: "Post updated successfully!",
+      }));
+
+      return res.data.updatedPost;
+    } catch (error) {
+      console.error("Update post error:", error);
+      set({
+        isLoading: false,
+        error: error.response?.data?.message || error.message,
+        success: null,
+      });
+      throw error;
+    }
+  },
+
+  clearMessages: () => {
+    set({ error: null, success: null });
+  },
 }));
 
 export default usePostStore;

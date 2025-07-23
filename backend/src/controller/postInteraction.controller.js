@@ -8,14 +8,23 @@ export const toggleLike = async (req, res) => {
 
     const existing = await Like.findOne({ user: userId, post: postId });
 
+    let liked = false;
     if (existing) {
       await existing.deleteOne();
-      return res.status(200).json({ liked: false });
+    } else {
+      await Like.create({ user: userId, post: postId });
+      liked = true;
     }
 
-    const like = await Like.create({ user: userId, post: postId });
-    res.status(201).json({ liked: true, like });
+    // This must come after the toggle
+    const likesCount = await Like.countDocuments({ post: postId });
+
+    return res.status(200).json({
+      liked,
+      likesCount, //Confirm this is included
+    });
   } catch (error) {
+    console.error("Toggle like error:", error);
     res.status(500).json({ error: "Failed to toggle like" });
   }
 };

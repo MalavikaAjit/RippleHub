@@ -14,7 +14,12 @@ export const protectAuth = (req, res, next) => {
     console.error("Error in protectAuth middleware:", error);
 
     if (error.name === "TokenExpiredError") {
-      return res.status(401).json({ success: false, message: "Session expired. Please log in again." });
+      return res
+        .status(401)
+        .json({
+          success: false,
+          message: "Session expired. Please log in again.",
+        });
     }
 
     return res.status(401).json({ success: false, message: "Unauthorized" });

@@ -25,13 +25,23 @@ export const usePostInteractionStore = create((set) => ({
 
   toggleLike: async (postId) => {
     try {
-      await axios.post(
+      const res = await axios.post(
         `${API_URL}/like/${postId}`,
         {},
         { withCredentials: true }
       );
-      // Optionally re-fetch interactions
-      await usePostInteractionStore.getState().fetchInteractions(postId);
+
+      // ✅ Update the count in store without refetching
+      set((state) => ({
+        interactions: {
+          ...state.interactions,
+          [postId]: {
+            ...state.interactions[postId],
+            isLiked: res.data.liked,
+            likesCount: res.data.likesCount, // <- ✅ update here
+          },
+        },
+      }));
     } catch (err) {
       console.error("Like error:", err);
     }

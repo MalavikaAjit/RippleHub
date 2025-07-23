@@ -33,6 +33,14 @@ export const getAllUsers = async (req, res) => {
           requestDirection = "received";
           requestId = receivedRequest._id;
         }
+        const lastMessage = await Message.findOne({
+          $or: [
+            { sender: currentUserId, receiver: user._id },
+            { sender: user._id, receiver: currentUserId },
+          ],
+        })
+          .sort({ createdAt: -1 })
+          .lean();
 
         return {
           _id: user._id,
@@ -43,6 +51,9 @@ export const getAllUsers = async (req, res) => {
           friendRequestStatus,
           requestDirection,
           requestId,
+          lastMessage: lastMessage?.message || null,
+          lastMessageAt: lastMessage?.createdAt || null,
+          profileImage: user.profileImage,
         };
       })
     );
@@ -75,5 +86,40 @@ export const getFriendList = async (req, res) => {
   } catch (error) {
     console.error("Error fetching friends list:", error);
     res.status(500).json({ error: "Failed to fetch friends" });
+  }
+};
+export const updateUserProfile = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const bio = req.body.bio;
+    const profileImage = req.file
+      ? `/profileUploads/${req.file.filename}`
+      : null;
+
+    const updateData = {};
+    if (bio) updateData.bio = bio;
+    if (profileImage) updateData.profileImage = profileImage;
+
+    const updated = await User.findByIdAndUpdate(userId, updateData, {
+      new: true,
+    }).select("-password");
+
+    return res.status(200).json(updated);
+  } catch (error) {
+    console.error("Update Error:", error);
+    return res.status(500).json({ error: "Failed to update profile" });
+  }
+};
+
+export const getProfile = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const user = await User.findById(userId).select("-password");
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    res.status(200).json(user);
+  } catch (error) {
+    console.error("Error getting profile:", error);
+    res.status(500).json({ error: "Failed to fetch profile" });
   }
 };
