@@ -1,35 +1,42 @@
-import { Post } from '../models/post.model.js'; // Adjust path to your Post model
-// import {postImageUpload} from '../middleware/multerConnection.js';
+import { Post } from '../models/post.model.js';
+
 export const createPost = async (req, res, next) => {
   try {
-    // Extract data from request
     const { caption, privacy } = req.body;
-    const imagePaths = req.imagePaths; // From middleware
+    const userId = req.userId;
+    const imagePaths = req.imagePaths;
 
-    // Create new post
+    if (!imagePaths || imagePaths.length === 0) {
+      return res.status(400).json({ error: 'At least one image is required' });
+    }
+
     const newPost = new Post({
-      post_image: imagePaths[0], // Store first image path (modify schema if storing multiple images)
+      userId,
+      post_image: imagePaths,
       caption,
-      privacy
+      privacy,
     });
-
     await newPost.save();
 
     res.status(201).json({
+      success: true,
       message: 'Post created successfully',
-      post: newPost
+      post: newPost,
     });
   } catch (error) {
-    next(error);
+    console.error('createPost error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
   }
 };
 
-export const getPost = async(req,res,next) =>{
+export const getPost = async (req, res) => {
   try {
-     const posts = await Post.find().sort({createdAt : -1});
-     res.status(200).json(posts);
-  }catch (error){
-    console.error("Error fetching posts :", error);
-    res.status(500).json({error : "Failed to fetch posts"});
+    const userId = req.userId;
+    const posts = await Post.find({ userId }).sort({ createdAt: -1 });
+    console.log("Posts fetched:", posts);
+    res.status(200).json({ success: true, posts });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Failed to fetch posts" });
   }
 };

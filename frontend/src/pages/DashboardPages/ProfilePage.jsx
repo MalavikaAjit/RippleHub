@@ -1,29 +1,14 @@
 import React, { useEffect, useState } from "react";
-import {
-  FaCheckCircle,
-  FaCog,
-  FaEdit,
-  FaArrowLeft,
-  FaArrowRight,
-  FaUserFriends,
-} from "react-icons/fa";
+import { FaCheckCircle, FaCog, FaEdit, FaArrowLeft, FaArrowRight } from "react-icons/fa";
 import { useThemeStore } from "../../store/themeStore";
 import { useAuthStore } from "../../store/authStore";
 import usePostStore from "../../store/postStore";
-import axios from "axios";
-import { useNavigate } from "react-router-dom";
 
-
+// Ensure baseUrl has no trailing slash
 const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:2057";
 
-const ImageWithErrorBoundary = ({
-  src,
-  alt,
-  postId,
-  index,
-  handleImageError,
-  ...props
-}) => {
+const ImageWithErrorBoundary = ({ src, alt, postId, index, handleImageError, ...props }) => {
+
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -50,6 +35,7 @@ const ImageWithErrorBoundary = ({
         className={`w-full h-48 object-cover ${
           loading && !error ? "opacity-0" : "opacity-100"
         }`}
+
         {...props}
       />
     </div>
@@ -161,7 +147,6 @@ const ProfilePage = () => {
     }));
   };
 
-
   const handleNextSlide = (postId, count) => {
     setCurrentSlide((prev) => ({
       ...prev,
@@ -191,6 +176,7 @@ const ProfilePage = () => {
                 }`}
               >
                 {user?.firstName || "User"} {user?.lastName || ""}
+
                 {user?.isVerified && (
                   <FaCheckCircle className="text-[#288683]" />
                 )}
@@ -242,6 +228,7 @@ const ProfilePage = () => {
             </button>
           </div>
         </div>
+        <div className="flex items-center gap-4">
 
         {/* Friend List Modal */}
         {showFriends && (
@@ -323,11 +310,7 @@ const ProfilePage = () => {
         {/* Posts Section */}
         <div className="flex items-center gap-4 mt-10">
           <hr className="flex-grow border-t border-gray-400 dark:border-gray-600" />
-          <span
-            className={`text-lg font-semibold ${
-              isDark ? "text-gray-200" : "text-gray-700"
-            }`}
-          >
+          <span className={`text-lg font-semibold ${isDark ? "text-gray-200" : "text-gray-700"}`}>
             Ripple Store
           </span>
           <hr className="flex-grow border-t border-gray-400 dark:border-gray-600" />
@@ -344,6 +327,7 @@ const ProfilePage = () => {
             <p className={isDark ? "text-white" : "text-gray-700"}>
               No posts available for this user.
             </p>
+
           )}
 
           {posts.map((post) => {
@@ -403,6 +387,9 @@ const ProfilePage = () => {
                 )}
               </div>
             );
+
+          })}
+
         {/* Images fetched from the database */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
           {error && <p className="text-red-500">{error}</p>}
@@ -513,6 +500,7 @@ const ProfilePage = () => {
           ) : (
             !isLoading && <p className={isDark ? "text-white" : "text-gray-700"}>No posts available.</p>
           )}
+
 
         </div>
       </div>
