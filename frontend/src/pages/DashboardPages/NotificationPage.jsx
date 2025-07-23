@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   FaBell,
   FaUserPlus,
@@ -6,64 +6,60 @@ import {
   FaHeart,
   FaCheckCircle,
 } from "react-icons/fa";
-import { useThemeStore } from "../../store/themeStore"; // Adjust path if needed
+import { useThemeStore } from "../../store/themeStore";
+import { useNotificationStore } from "../../store/notificationStore";
+import { useFriendRequestStore } from "../../store/friendRequestStore";
 
-const notifications = [
-  {
-    id: 1,
-    type: "like",
-    icon: <FaHeart className="text-red-500" />,
-    message: "Alex liked your Ripple post.",
-    time: "5 mins ago",
-    group: "Today",
-  },
-  {
-    id: 2,
-    type: "follow",
-    icon: <FaUserPlus className="text-blue-500" />,
-    message: "Sophie started following you.",
-    time: "20 mins ago",
-    group: "Today",
-  },
-  {
-    id: 3,
-    type: "comment",
-    icon: <FaCommentDots className="text-green-500" />,
-    message: "Mike commented on your Ripple.",
-    time: "2 hours ago",
-    group: "Today",
-  },
-  {
-    id: 4,
-    type: "like",
-    icon: <FaHeart className="text-red-500" />,
-    message: "Emma liked your insight.",
-    time: "Yesterday",
-    group: "Earlier",
-  },
-  {
-    id: 5,
-    type: "follow",
-    icon: <FaUserPlus className="text-blue-500" />,
-    message: "David started following you.",
-    time: "2 days ago",
-    group: "Earlier",
-  },
-];
-
-const groupedNotifications = notifications.reduce((acc, curr) => {
-  acc[curr.group] = acc[curr.group] ? [...acc[curr.group], curr] : [curr];
-  return acc;
-}, {});
+const iconMap = {
+  like: <FaHeart className="text-red-500" />,
+  comment: <FaCommentDots className="text-green-500" />,
+  follow: <FaUserPlus className="text-blue-500" />,
+  friend_request: <FaUserPlus className="text-blue-500" />,
+  request_accepted: <FaCheckCircle className="text-green-500" />,
+  friend_accept: <FaCheckCircle className="text-green-500" />,
+};
 
 const typeBadge = {
   like: "Like",
   follow: "New Follower",
   comment: "Comment",
+  friend_request: "Friend Request",
+  request_accepted: "Accepted",
+  friend_accept: "Accepted",
 };
 
 const NotificationPage = () => {
   const { isDark } = useThemeStore();
+  const {
+    notifications,
+    fetchNotifications,
+    updateNotificationResponse,
+    initSocket,
+  } = useNotificationStore();
+  const { respondToRequest } = useFriendRequestStore();
+
+  useEffect(() => {
+    fetchNotifications();
+    initSocket(); //  Enable real-time
+  }, []);
+
+  const handleAction = async (requestId, action, notificationId) => {
+    try {
+      const status = await respondToRequest(requestId, action);
+      updateNotificationResponse(notificationId, status);
+    } catch (err) {
+      console.error(`Failed to ${action} request`, err);
+    }
+  };
+
+  const grouped = notifications.reduce((acc, curr) => {
+    const date = new Date(curr.createdAt);
+    const group =
+      date.toDateString() === new Date().toDateString() ? "Today" : "Earlier";
+    acc[group] = acc[group] ? [...acc[group], curr] : [curr];
+    return acc;
+  }, {});
+
   const hasNotifications = notifications.length > 0;
 
   return (
@@ -72,7 +68,6 @@ const NotificationPage = () => {
         isDark ? "bg-[#121212]" : "bg-[#f3f6fa]"
       }`}
     >
-      {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <FaBell className="text-[#288683] text-xl" />
         <h2
@@ -86,7 +81,7 @@ const NotificationPage = () => {
 
       {hasNotifications ? (
         <div className="space-y-8">
-          {Object.keys(groupedNotifications).map((group) => (
+          {Object.keys(grouped).map((group) => (
             <div key={group}>
               <h3
                 className={`text-sm font-semibold mb-3 uppercase tracking-wider ${
@@ -96,9 +91,9 @@ const NotificationPage = () => {
                 {group}
               </h3>
               <div className="space-y-3">
-                {groupedNotifications[group].map((n) => (
+                {grouped[group].map((n) => (
                   <div
-                    key={n.id}
+                    key={n._id}
                     className={`flex items-start gap-3 p-4 rounded-lg shadow-sm border hover:shadow-md transition-all duration-200 
                     ${
                       isDark
@@ -111,7 +106,7 @@ const NotificationPage = () => {
                         isDark ? "bg-[#2a2a2a]" : "bg-gray-100"
                       }`}
                     >
-                      {n.icon}
+                      {iconMap[n.type] || <FaBell />}
                     </div>
                     <div className="flex-1">
                       <p
@@ -121,13 +116,13 @@ const NotificationPage = () => {
                       >
                         {n.message}
                       </p>
-                      <div className="flex justify-between text-xs">
+                      <div className="flex justify-between items-center text-xs">
                         <span
                           className={`${
                             isDark ? "text-gray-400" : "text-gray-400"
                           }`}
                         >
-                          {n.time}
+                          {new Date(n.createdAt).toLocaleTimeString()}
                         </span>
                         <span
                           className={`px-2 py-0.5 rounded-full font-medium
@@ -137,9 +132,45 @@ const NotificationPage = () => {
                               : "bg-gray-100 text-gray-600"
                           }`}
                         >
-                          {typeBadge[n.type]}
+                          {typeBadge[n.type] || "Notification"}
                         </span>
                       </div>
+
+                      {n.type === "friend_request" &&
+                        n.requestId &&
+                        n.responded !== "accepted" &&
+                        n.responded !== "declined" && (
+                          <div className="flex gap-3 mt-2">
+                            {n.responded === "accepted" ? (
+                              <span className="px-3 py-1 bg-green-100 text-green-700 rounded font-medium text-sm">
+                                Friends
+                              </span>
+                            ) : n.responded === "declined" ? (
+                              <span className="px-3 py-1 bg-red-100 text-red-700 rounded font-medium text-sm">
+                                Declined
+                              </span>
+                            ) : (
+                              <>
+                                <button
+                                  onClick={() =>
+                                    handleAction(n.requestId, "accept", n._id)
+                                  }
+                                  className="px-3 py-1 text-sm font-medium rounded bg-green-500 text-white hover:bg-green-600"
+                                >
+                                  Accept
+                                </button>
+                                <button
+                                  onClick={() =>
+                                    handleAction(n.requestId, "decline", n._id)
+                                  }
+                                  className="px-3 py-1 text-sm font-medium rounded bg-red-500 text-white hover:bg-red-600"
+                                >
+                                  Decline
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        )}
                     </div>
                   </div>
                 ))}
@@ -160,7 +191,7 @@ const NotificationPage = () => {
           <p
             className={`${isDark ? "text-gray-400" : "text-gray-500"} text-sm`}
           >
-            No new notifications for now 🎉
+            No new notifications for now
           </p>
         </div>
       )}
