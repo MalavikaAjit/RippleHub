@@ -11,8 +11,14 @@ npm install react-icons react-toastify
 npm install bcryptjs
 npm install zustand
 npm install cookie-parser
+npm install socket.io
 
 Frontend
 
 Npm install
 Npm install tailwind
+npm install socket.io-client
+npm install date-fns
+npm install react-hot-toast
+npm install socket.io
+npm install dayjs
