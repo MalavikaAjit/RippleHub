@@ -14,9 +14,17 @@ const FindPage = () => {
   const [loadingId, setLoadingId] = useState(null);
   const location = useLocation();
 
-  useEffect(() => {
-    return () => setResults([]); // Clear results when navigating away
-  }, [location.pathname]);
+
+  useEffect(()=>{
+    const delayDebounce = setTimeout(()=>{
+      if (search.trim()){
+        handleSearch();
+      }else{
+        setResults([]);
+      }
+    },200);
+    return () => clearTimeout(delayDebounce);
+  },[search]);
 
   const handleSearch = async () => {
     try {
@@ -24,11 +32,13 @@ const FindPage = () => {
         withCredentials: true,
       });
 
-      const filtered = res.data.filter((u) =>
-        `${u.firstName} ${u.lastName}`
-          .toLowerCase()
-          .includes(search.toLowerCase())
-      );
+      const filtered = res.data.filter((u) =>{
+        const fullName =  `${u.firstName} ${u.lastName}`.toLowerCase();
+        const email = u.email?.toLowerCase();
+        const query = search.toLowerCase();
+
+        return fullName.includes(query) || email.includes(query);
+      });
 
       setResults(filtered);
     } catch (err) {
