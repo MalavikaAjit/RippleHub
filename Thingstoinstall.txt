@@ -1,5 +1,5 @@
-Backend 
-
+Backend (all the package)
+======> To run the backend (nodemon src/index.js)
 Npm install
 Npm install express
 Npm install mongoose
@@ -13,8 +13,8 @@ npm install zustand
 npm install cookie-parser
 npm install socket.io
 
-Frontend
-
+Frontend (all the package)
+======> To run the Frontend (npm run dev)
 Npm install
 Npm install tailwind
 npm install socket.io-client
